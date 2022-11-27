@@ -1,0 +1,17 @@
+server:
+  port: 9527
+
+line:
+  bot:
+    channel-token: h4DTmIijSy9zvNpgQ0h22g2H+ca/9qBSJgwWVHoWeD3CCirYxMqxPWbOBB+zauardrPJS4WF2HaarhNLxPqp427wgJmD23n7T6u89c83o+VxgGcigjYIObYlbwEZLVt/OFVWG7e8VdztnTTdets/nAdB04t89/1O/w1cDnyilFU=
+    channel-secret: 04d7d93ccf4c861b878e2aebf67d8071
+    handler:
+      enabled: true
+      path: /callback
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb+srv://mongodb:mongodbmima@cluster0.ctnn6sg.mongodb.net/?retryWrites=true&w=majority
+      database: lineusers
+

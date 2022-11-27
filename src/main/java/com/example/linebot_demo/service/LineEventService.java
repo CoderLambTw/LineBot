@@ -1,0 +1,190 @@
+package com.example.linebot_demo.service;
+
+import com.example.linebot_demo.Supplier.FlexMessageSupplier;
+import com.example.linebot_demo.Util.HttpUtil;
+import com.example.linebot_demo.Util.UUIDUtil;
+import com.example.linebot_demo.model.LineUser;
+import com.example.linebot_demo.model.LineUserMessage;
+import com.linecorp.bot.client.LineMessagingClient;
+import com.linecorp.bot.model.ReplyMessage;
+import com.linecorp.bot.model.event.FollowEvent;
+import com.linecorp.bot.model.event.MessageEvent;
+import com.linecorp.bot.model.event.UnfollowEvent;
+import com.linecorp.bot.model.event.message.LocationMessageContent;
+import com.linecorp.bot.model.event.message.StickerMessageContent;
+import com.linecorp.bot.model.event.message.TextMessageContent;
+import com.linecorp.bot.model.event.source.Source;
+import com.linecorp.bot.model.message.LocationMessage;
+import com.linecorp.bot.model.message.Message;
+import com.linecorp.bot.model.message.StickerMessage;
+import com.linecorp.bot.model.message.TextMessage;
+import com.linecorp.bot.model.response.BotApiResponse;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+
+import static java.util.Collections.singletonList;
+
+@Slf4j
+@Service
+public class LineEventService {
+
+    private final UUIDUtil uuidUtil;
+
+    private final LineUserService lineUserService;
+
+    private final LineMessagingClient lineMessagingClient;
+    
+    @Autowired
+    public LineEventService(UUIDUtil uuidUtil, LineUserService lineUserService, LineMessagingClient lineMessagingClient) {
+        this.uuidUtil = uuidUtil;
+        this.lineUserService = lineUserService;
+        this.lineMessagingClient = lineMessagingClient;
+    }
+
+    public void handleTextContent(MessageEvent<TextMessageContent> event) throws Exception {
+        HttpUtil httpUtil = new HttpUtil();
+        TextMessageContent message = event.getMessage();
+        String replyToken = event.getReplyToken();
+        String text = message.getText();
+        Source source = event.getSource();
+        String userId = source.getUserId();
+        log.info("[Text Message Event] - User {} sent text {}", userId, message.getText());
+        this.saveUserMessage(userId, message.getText());
+        String responseMessage = null;
+        switch (text) {
+            case "過往訊息" -> {
+                List<String> messageLists = new ArrayList();
+                List<LineUser> lineUsers = lineUserService.findAll();
+                lineUsers.forEach(
+                        lineUser -> lineUser.getMessages().forEach(
+                                lineUserMessage -> messageLists.add(lineUserMessage.getContent())));
+
+                for(int i = 0; i < messageLists.size(); i++){
+                    messageLists.set(i ,String.valueOf(i + 1) + ". " + messageLists.get(i));
+                }
+                responseMessage = String.join("\n", messageLists);
+                this.replyText(replyToken, responseMessage);
+            }
+            case "天氣" -> {
+                responseMessage = httpUtil.get("https://opendata.cwb.gov.tw/api/v1/rest/datastore/O-A0003-001?Authorization=CWB-BEFBC2DC-A35D-45D0-88E1-BD1CCC49891F&locationName=臺北");
+                this.replyText(replyToken, responseMessage);
+                log.info("Weather Open Data {}", responseMessage);
+            }
+            case "flex" -> this.reply(replyToken, new FlexMessageSupplier().get());
+            default -> {
+                log.info("Return echo message " + replyToken + ":" + text);
+                List<Message> defaultMessageList = new ArrayList();
+                defaultMessageList.add(new TextMessage("可以麻煩你再說一次嗎？"));
+                defaultMessageList.add(new StickerMessage("11538", "51626532"));
+                this.reply(replyToken, defaultMessageList);
+            }
+        }
+    }
+
+    public void handleSticker(MessageEvent<StickerMessageContent> event) {
+        StickerMessageContent message = event.getMessage();
+        Source source = event.getSource();
+        String userId = source.getUserId();
+        log.info("[Sticker Message Event] - User {} sent sticker {}", userId, message.getStickerId());
+        String replyToken = event.getReplyToken();
+        this.replyText(replyToken, "這是貼圖");
+    }
+
+    public void handleLocation(MessageEvent<LocationMessageContent> event) {
+        LocationMessageContent message = event.getMessage();
+        Source source = event.getSource();
+        String userId = source.getUserId();
+        log.info("[Location Message Event] - User {} sent location {}", userId, message.getTitle());
+        String replyToken = event.getReplyToken();
+        reply(replyToken, new LocationMessage(
+                (message.getTitle() == null) ? "Location replied" : message.getTitle(),
+                message.getAddress(),
+                message.getLatitude(),
+                message.getLongitude()
+        ));
+    }
+
+    private void replyText(@NonNull String replyToken, @NonNull String message) {
+        if (replyToken.isEmpty()) {
+            throw new IllegalArgumentException("replyToken must not be empty");
+        }
+        if (message.length() > 1000) {
+            message = message.substring(0, 1000 - 2) + "……";
+        }
+        this.reply(replyToken, new TextMessage(message));
+    }
+
+
+    private void reply(@NonNull String replyToken, @NonNull Message message) {
+        reply(replyToken, singletonList(message));
+    }
+
+    private void reply(@NonNull String replyToken, @NonNull List<Message> messages) {
+        reply(replyToken, messages, false);
+    }
+
+    private void reply(@NonNull String replyToken,
+                       @NonNull List<Message> messages,
+                       boolean notificationDisabled) {
+        try {
+            BotApiResponse apiResponse =
+                    lineMessagingClient
+                            .replyMessage(new ReplyMessage(replyToken, messages, notificationDisabled))
+                            .get();
+
+            log.info("Sent messages: {}", apiResponse);
+        }
+        catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void saveFollowedUser(FollowEvent event) {
+        Source source = event.getSource();
+        String userId = source.getUserId();
+        log.info("[Follow Event] - User {} followed this bot", userId);
+        LineUser lineUser = lineUserService.findById(userId);
+        if(lineUserService.isNew(lineUser)) {
+            lineUser.setId(userId);
+            lineUser.setStartedFollowingSince(new Date());
+            lineUserService.addUser(lineUser);
+            log.info("User {} does not exist, saved ...", userId);
+        }
+        else {
+            log.info("User {} already exists, updating following status", userId);
+            lineUser.setUnfollowed(false);
+            lineUserService.updateUser(lineUser);
+        }
+    }
+
+    public void markUserUnfollowed(UnfollowEvent event) {
+        Source source = event.getSource();
+        String userId = source.getUserId();
+        log.info("[Unfollow Event] - User {} unfollowed this bot", userId);
+        LineUser lineUser = lineUserService.findById(userId);
+        lineUser.setUnfollowed(true);
+        lineUserService.updateUser(lineUser);
+    }
+
+    public void saveUserMessage(String userId, String message) {
+        LineUser lineUser = lineUserService.findById(userId);
+        List<LineUserMessage> messages = lineUser.getMessages();
+        LineUserMessage lineUserMessage = new LineUserMessage();
+        lineUserMessage.setId(uuidUtil.getRandomUUID());
+        lineUserMessage.setContent(message);
+        lineUserMessage.setSentTime(new Date());
+        messages.add(lineUserMessage);
+        lineUserService.updateUser(lineUser);
+    }
+
+
+
+}
