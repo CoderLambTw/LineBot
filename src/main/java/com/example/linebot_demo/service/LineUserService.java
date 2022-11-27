@@ -1,7 +1,6 @@
 package com.example.linebot_demo.service;
 
 import com.example.linebot_demo.model.LineUser;
-import com.example.linebot_demo.model.LineUserMessage;
 import com.example.linebot_demo.repository.LineUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,10 +25,7 @@ public class LineUserService {
     }
 
     public boolean isNew(LineUser lineUser) {
-        if(StringUtils.hasText(lineUser.getId())) {
-            return false;
-        }
-        return true;
+        return !StringUtils.hasText(lineUser.getId());
     }
 
     public LineUser findById(String id) {
@@ -37,14 +33,14 @@ public class LineUserService {
         return lineUser.orElse(new LineUser());       
     }
 
-    public LineUser addUser(LineUser lineUser) {
+    public void addUser(LineUser lineUser) {
         if(Objects.isNull(lineUser)) {
             throw new RuntimeException("Cannot be null");
         }
-        return this.lineUserRepository.save(lineUser);
+        this.lineUserRepository.save(lineUser);
     }
 
-    public LineUser updateUser(LineUser lineUser) {
-        return this.lineUserRepository.save(lineUser);
+    public void updateUser(LineUser lineUser) {
+        this.lineUserRepository.save(lineUser);
     }
 }

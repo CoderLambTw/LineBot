@@ -24,7 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -58,7 +57,7 @@ public class LineEventService {
         String userId = source.getUserId();
         log.info("[Text Message Event] - User {} sent text {}", userId, message.getText());
         this.saveUserMessage(userId, message.getText());
-        String responseMessage = null;
+        String responseMessage;
         switch (text) {
             case "過往訊息" -> {
                 List<String> messageLists = new ArrayList();
@@ -68,7 +67,7 @@ public class LineEventService {
                                 lineUserMessage -> messageLists.add(lineUserMessage.getContent())));
 
                 for(int i = 0; i < messageLists.size(); i++){
-                    messageLists.set(i ,String.valueOf(i + 1) + ". " + messageLists.get(i));
+                    messageLists.set(i , i + 1 + ". " + messageLists.get(i));
                 }
                 responseMessage = String.join("\n", messageLists);
                 this.replyText(replyToken, responseMessage);
