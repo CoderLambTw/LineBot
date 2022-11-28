@@ -48,4 +48,5 @@ Project is created with:
 3. 按下webhookURL下方的Verify按鈕即可確認是否與本地server連通，如得到200的repsonse即可成功與機器人互動
 
 ## Demo
-* [Demo Video](https://drive.google.com/file/d/1ed5j9mCkFIw9mRtFRVGzhaEgVjulPGme/view?usp=sharing)
+* [Demo Video](https://drive.google.com/file/d/1aRW5odqJcymwkOUJA4LqKfaG0dPTtTDW/view?usp=share_link)
+* 功能列表： [過往訊息、天氣、辨識貼圖事件、defaul message repsponse]
