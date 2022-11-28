@@ -1,6 +1,5 @@
 package com.example.linebot_demo.service;
 
-import com.example.linebot_demo.Supplier.FlexMessageSupplier;
 import com.example.linebot_demo.Util.HttpUtil;
 import com.example.linebot_demo.Util.UUIDUtil;
 import com.example.linebot_demo.model.FlexMessageDemo;
