@@ -1,4 +1,4 @@
-package com.example.linebot_demo.Util;
+package com.example.linebot_demo.util;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

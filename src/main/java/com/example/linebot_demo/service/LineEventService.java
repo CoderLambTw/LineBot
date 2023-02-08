@@ -1,7 +1,7 @@
 package com.example.linebot_demo.service;
 
-import com.example.linebot_demo.Util.HttpUtil;
-import com.example.linebot_demo.Util.UUIDUtil;
+import com.example.linebot_demo.util.HttpUtil;
+import com.example.linebot_demo.util.UUIDUtil;
 import com.example.linebot_demo.model.FlexMessageDemo;
 import com.example.linebot_demo.model.LineUser;
 import com.example.linebot_demo.model.LineUserMessage;

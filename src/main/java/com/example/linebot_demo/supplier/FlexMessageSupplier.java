@@ -1,4 +1,4 @@
-package com.example.linebot_demo.Supplier;
+package com.example.linebot_demo.supplier;
 
 import com.linecorp.bot.model.action.URIAction;
 import com.linecorp.bot.model.message.FlexMessage;

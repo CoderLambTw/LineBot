@@ -1,4 +1,4 @@
-package com.example.linebot_demo.Util;
+package com.example.linebot_demo.util;
 
 import okhttp3.*;
 
